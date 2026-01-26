@@ -1,15 +1,3 @@
-feature/estrutura-tanacara
-# Tanacara
-
-Estrutura inicial criada automaticamente.
-
-Pontos:
-- Next.js + TypeScript (placeholders)
-- Páginas: /, /radar, /radar/[slug]
-- Scripts: scripts/generate_radar.mjs
-
-Substitua os placeholders pelos seus arquivos/funcionalidade.
-=======
 # Tanacara — MVP (Next.js + Radar automático)
 
 ## Rodar localmente
@@ -30,4 +18,3 @@ Substitua os placeholders pelos seus arquivos/funcionalidade.
 
 ## Onde ficam os posts
 - `tanacara/content/radar/*.md`
-main

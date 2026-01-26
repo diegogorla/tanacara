@@ -1,15 +1,3 @@
-{
-
-  feature/estrutura-tanacara
-export default function Home() 
-  return (
-    <main>
-      <h1>Tanacara — Home</h1>
-      <p>Estrutura inicial criada.</p>
-    </main>
-  );
-}
-=======
 import Link from 'next/link';
 
 export default function Home() {
