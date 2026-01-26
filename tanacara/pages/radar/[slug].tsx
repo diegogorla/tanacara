@@ -1,3 +1,17 @@
+feature/estrutura-tanacara
+import { useRouter } from 'next/router';
+
+export default function RadarItem() {
+  const router = useRouter();
+  const { slug } = router.query;
+  return (
+    <main>
+      <h1>Radar: {String(slug)}</h1>
+      <p>Detalhes do item: {String(slug)}</p>
+    </main>
+  );
+}
+=======
 import Link from 'next/link';
 import { getAllPosts, getPostHtml, PostMeta } from '../../lib/posts';
 
@@ -49,3 +63,4 @@ export default function PostPage({ meta, html }: { meta: PostMeta; html: string 
     </main>
   );
 }
+main

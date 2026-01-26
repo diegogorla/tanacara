@@ -1,3 +1,8 @@
+feature/estrutura-tanacara
+#!/usr/bin/env node
+// script placeholder para gerar arquivo(s) do radar
+console.log('generate_radar script placeholder');
+=======
 import fs from 'fs';
 import path from 'path';
 import { formatISO } from 'date-fns';
@@ -122,3 +127,4 @@ async function main() {
 }
 
 await main();
+main

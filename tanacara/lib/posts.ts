@@ -1,3 +1,9 @@
+feature/estrutura-tanacara
+export function getPosts() {
+  // placeholder: retornar lista de posts/itens do radar
+  return [];
+}
+=======
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
@@ -67,3 +73,4 @@ export async function getPostHtml(slug: string): Promise<{ meta: PostMeta; html:
 
   return { meta, html: contentHtml };
 }
+main
