@@ -1,23 +1,10 @@
 {
   "name": "tanacara",
-      feature/estrutura-tanacara
   "version": "0.1.0",
-=======
-main
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-# feature/estrutura-tanacara
-    "start": "next start"
-  },
-  "dependencies": {
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
-  }
-}
-=======
     "start": "next start -p $PORT",
     "gen:radar": "node scripts/generate_radar.mjs"
   },
@@ -38,4 +25,3 @@ main
     "typescript": "^5.4.5"
   }
 }
-main
