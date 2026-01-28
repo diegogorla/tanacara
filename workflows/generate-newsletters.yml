@@ -1,0 +1,36 @@
+name: Generate Newsletters
+
+on:
+  # Run daily to update newsletter posts
+  schedule:
+    - cron: "30 10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Generate newsletters
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node tanacara/scripts/generate_newsletters.mjs
+
+      - name: Commit and push newsletter posts
+        run: |
+          git config user.name "tanacara-bot"
+          git config user.email "bot@tanacara.com"
+          git add tanacara/content/newsletter || true
+          git commit -m "chore: update newsletters" || exit 0
+          git push
