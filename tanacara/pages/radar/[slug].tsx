@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { getAllPosts, getPostHtml, PostMeta } from '../../../lib/posts';
+import { getAllPosts, getPostHtml, PostMeta } from '../../lib/posts';
 
 interface PostProps {
   meta: PostMeta;
@@ -11,7 +11,7 @@ export default function RadarPost({ meta, html }: PostProps) {
   return (
     <main className="container mx-auto p-4">
       <nav className="mb-4">
-        <Link href="/radar">← Voltar ao Radar</Link>
+        <Link href="/radar">\u2190 Voltar ao Radar</Link>
       </nav>
       <article>
         <h1>{meta.title}</h1>
