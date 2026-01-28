@@ -1,6 +1,3 @@
 User-agent: *
-feature/estrutura-tanacara
-Disallow:
-=======
 Allow: /
-main
+Sitemap: https://tanacara.com/sitemap.xml
