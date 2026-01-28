@@ -1,102 +1,116 @@
+#!/usr/bin/env node
+// Este script gera posts diários para a seção Radar do Tanacara.
+// Ele usa o modelo Gemini para criar conteúdo original a partir de temas.
+
 import fs from 'fs';
 import path from 'path';
-import Parser from 'rss-parser';
-import slugify from 'slugify';
+import { formatISO } from 'date-fns';
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({});
+const OUT_DIR = path.join(process.cwd(), 'content', 'radar');
 
-const parser = new Parser();
-
-// You can add or replace RSS feeds here
-const SOURCES = [
-  'https://blog.google/rss/',
-  'https://www.theverge.com/rss/index.xml',
-];
-
-function todayBR() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+function ensureDir(p) {
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 }
 
-async function fetchItems(maxItems = 12) {
-  const all = [];
-  for (const url of SOURCES) {
-    try {
-      const feed = await parser.parseURL(url);
-      for (const item of feed.items.slice(0, 6)) {
-        all.push({
-          source: feed.title || url,
-          title: item.title || '',
-          link: item.link || '',
-          snippet: item.contentSnippet || item.content || '',
-          isoDate: item.isoDate || ''
-        });
-      }
-    } catch (e) {
-      console.error('RSS fail:', url, e.message);
-    }
-  }
-  // sort by date desc if isoDate exists
-  all.sort((a, b) => (b.isoDate || '').localeCompare(a.isoDate || ''));
-  return all.slice(0, maxItems);
+function slugify(s) {
+  return String(s)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 80);
 }
 
-async function generateRadar(items) {
-  const itemsText = items
-    .map((it, i) => {
-      return `${i + 1}) ${it.title}\nFonte: ${it.source}\nLink: ${it.link}\nResumo bruto: ${String(it.snippet).slice(0, 280)}\n`;
-    })
-    .join('\n');
+function safeWrite(filePath, content) {
+  if (fs.existsSync(filePath)) return false;
+  fs.writeFileSync(filePath, content, 'utf8');
+  return true;
+}
 
-  const prompt = `
-Você é o editor do site Tanacara (PT-BR). Gere um \"Radar\" diário.
+function getTopics() {
+  return [
+    'Ferramenta digital barata que resolve um problema real (produtividade/automação)',
+    'App útil para criadores (vídeo/áudio/imagem) com bom custo-benefício',
+    'Curso ou trilha de aprendizado (IA/automação/negócios) com proposta prática',
+    'Notícia relevante de IA aplicada (sem hype vazio)'
+  ];
+}
+
+function systemPrompt() {
+  return `Você é o editor do site Tanacara (pt-BR).
+
 Regras:
-- Use tom profissional, direto e humano.
-- Faça 6 a 8 tópicos, cada um com:
-  (a) O que aconteceu (1-2 frases)
-  (b) Por que importa (1 frase)
-  (c) Link da fonte (mantenha o URL)
-- Depois, inclua uma seção \"Recomendação do dia\" com 1 ferramenta digital (genérica, sem inventar preços) e 1 CTA para newsletter.
-- Não invente fatos além do que está nos itens. Se algo estiver incerto, declare incerteza.
-- Saída final em Markdown.
+- Produza conteúdo útil, objetivo e com rigor terminológico.
+- Não invente dados nem fontes; se citar algo, use URL oficial da empresa/projeto quando possível.
+- Estilo: informativo, direto, com humor sutil quando couber.
+- Estrutura do post: título, resumo (2-3 frases), corpo com subtítulos, lista de prós/contras, sugestão de uso, CTA discreto.
+- Inclua de 1 a 3 URLs em "sourceUrls".
 
-Itens do dia:
-${itemsText}
-`;
+Retorne SOMENTE JSON com este schema:
+{
+  "title": string,
+  "summary": string,
+  "tags": string[],
+  "sourceUrls": string[],
+  "bodyMarkdown": string
+}`;
+}
 
-  const resp = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: prompt,
+async function generatePost(ai, topic) {
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: [
+      { role: 'user', parts: [{ text: systemPrompt() }] },
+      { role: 'user', parts: [{ text: `Tema do post: ${topic}` }] }
+    ]
   });
-  return resp.text || '';
+  const text = response.text?.trim();
+  if (!text) throw new Error('Resposta vazia do modelo.');
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  const json = JSON.parse(text.slice(start, end + 1));
+  return json;
+}
+
+function toMarkdownFile({ title, summary, tags, sourceUrls, bodyMarkdown }) {
+  const date = formatISO(new Date());
+  return (
+    `---\n` +
+    `title: "${String(title).replace(/"/g, '\\"')}"\n` +
+    `date: "${date}"\n` +
+    `summary: "${String(summary).replace(/"/g, '\\"')}"\n` +
+    `tags: [${(tags || []).map((t) => `"${String(t).replace(/"/g, '\\"')}"`).join(', ')}]\n` +
+    `sourceUrls: [${(sourceUrls || []).map((u) => `"${String(u).replace(/"/g, '\\"')}"`).join(', ')}]\n` +
+    '---\n\n' +
+    `${bodyMarkdown}\n`
+  );
 }
 
 async function main() {
-  const date = todayBR();
-  const items = await fetchItems();
-  if (items.length < 4) {
-    throw new Error('Poucos itens coletados. Ajuste fontes RSS.');
+  ensureDir(OUT_DIR);
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error('ERRO: defina GEMINI_API_KEY');
+    process.exit(1);
   }
-  const md = await generateRadar(items);
-
-  const title = `Radar Tanacara — ${date}`;
-  const slug = slugify(`radar-${date}`, { lower: true, strict: true });
-
-  const outDir = path.join(process.cwd(), 'content', 'radar');
-  fs.mkdirSync(outDir, { recursive: true });
-  const filePath = path.join(outDir, `${slug}.md`);
-  if (fs.existsSync(filePath)) {
-    console.log('Já existe:', filePath);
-    return;
+  const ai = new GoogleGenAI({});
+  const topics = getTopics();
+  let created = 0;
+  for (const topic of topics) {
+    try {
+      const post = await generatePost(ai, topic);
+      const slug = slugify(post.title || topic);
+      const filePath = path.join(OUT_DIR, `${slug}.md`);
+      const md = toMarkdownFile(post);
+      const ok = safeWrite(filePath, md);
+      if (ok) created++;
+    } catch (e) {
+      console.error('Falha ao gerar post para tema', topic, e);
+    }
   }
-
-  const frontmatter = `---\ntitle: "${title}"\ndate: "${date}"\ntype: "radar"\n---\n\n`;
-  fs.writeFileSync(filePath, frontmatter + md.trim() + '\n', 'utf-8');
-  console.log('Gerado:', filePath);
+  console.log(`Posts criados: ${created}`);
 }
 
 main().catch((e) => {

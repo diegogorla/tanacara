@@ -1,27 +1,31 @@
 {
   "name": "tanacara",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p $PORT",
-    "gen:radar": "node scripts/generate_radar.mjs"
+    "start": "next start",
+    "lint": "next lint",
+    "generate:radar": "node scripts/generate_radar.mjs",
+    "generate:newsletters": "node scripts/generate_newsletters.mjs"
   },
   "dependencies": {
-    "@google/genai": "^0.7.0",
-    "date-fns": "^3.6.0",
-    "gray-matter": "^4.0.3",
-    "next": "^14.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "remark": "^15.0.1",
-    "remark-html": "^16.0.1"
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "gray-matter": "4.0.3",
+    "remark": "15.0.1",
+    "remark-html": "16.0.1",
+    "rss-parser": "3.12.0",
+    "date-fns": "3.2.0",
+    "@google/genai": "0.1.0",
+    "framer-motion": "11.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.11.30",
-    "@types/react": "^18.2.66",
-    "@types/react-dom": "^18.2.22",
-    "typescript": "^5.4.5"
+    "typescript": "5.3.3",
+    "@types/node": "20.10.2",
+    "@types/react": "18.2.25",
+    "@types/react-dom": "18.2.9"
   }
 }
